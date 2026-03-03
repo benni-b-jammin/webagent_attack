@@ -1,0 +1,6 @@
+# used by blackbox_random_search
+iters: 50
+trigger_len: 12
+score_items: 3
+target_contains: "ACTION:"
+alphabet: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "

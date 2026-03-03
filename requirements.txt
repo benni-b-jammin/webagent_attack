@@ -1,0 +1,7 @@
+# requirements.txt - will expand later if needed
+pyyaml
+playwright
+openai
+requests
+transformers
+torch
