@@ -1,4 +1,4 @@
-# webagent-attack (rebuild scaffold)
+# webagent_attack
 
 This repository is a simplified rebuild scaffold for research on **indirect prompt injection against web agents**, inspired by the paper *“Manipulating LLM Web Agents with Indirect Prompt Injection Attack via HTML Accessibility Tree”* (Johnson, Pham, Le) and the original `manipulating-web-agents` [repository](https://github.com/sej2020/Manipulating-Web-Agents/).
 
@@ -19,7 +19,7 @@ This scaffold currently supports:
 
 - **Trigger artifact creation (registry-based)**
   - `make_trigger.py` now supports selecting an algorithm via a registry (currently includes a safe `fixed` algorithm as well as blackbox functionality - the gcg algorithm is still broken, and so a stub is written in its place
-  
+
 ## Repo layout
 
 - Root contains only: `README.md`, `.env`, `.gitignore`, `requirements.txt`
