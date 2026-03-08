@@ -13,12 +13,12 @@ For each URL, this script loads the page in a Playwright Chromium browser and ca
 Output
 ------
 Writes a dataset folder containing:
-  - data/datasets/<dataset_name>/items/<item_id>.json  (one JSON per captured URL)
-  - data/datasets/<dataset_name>/meta.json            (capture metadata + list of items)
+  - src/data/datasets/<dataset_name>/items/<item_id>.json  (one JSON per captured URL)
+  - src/data/datasets/<dataset_name>/meta.json            (capture metadata + list of items)
 
 Configuration
 -------------
-By default uses configs/dataset_capture.yaml. You can override via:
+By default uses config/dataset_capture.yaml. You can override via:
   --config <path>
 
 Requirements
@@ -36,19 +36,17 @@ import time
 from pathlib import Path
 from typing import Any, Dict
 
-# Ensure imports work regardless of where the script is invoked from.
-ROOT = Path(__file__).resolve().parents[1]
-SRC = Path(__file__).resolve().parent
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
+ROOT = Path(__file__).resolve().parents[2]   # project root
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-from utils.config import load_config  # noqa: E402
-from utils.logging_utils import make_run_dir, save_run_metadata, setup_logger, write_json  # noqa: E402
-from utils.url_list import load_url_list, iter_items  # noqa: E402
-from utils.dataset_capture import capture_page, make_dataset_record, write_item_json  # noqa: E402
+from src.utils.config import load_config  # noqa: E402
+from src.utils.logging_utils import make_run_dir, save_run_metadata, setup_logger, write_json  # noqa: E402
+from src.utils.url_list import load_url_list, iter_items  # noqa: E402
+from src.utils.dataset_capture import capture_page, make_dataset_record, write_item_json  # noqa: E402
 
 
-DEFAULT_CONFIG = "configs/dataset_capture.yaml"
+DEFAULT_CONFIG = "config/dataset_capture.yaml"
 
 
 def main() -> None:
@@ -62,9 +60,9 @@ def main() -> None:
 
     cfg = load_config(args.config)
 
-    url_list_path = cfg.get("url_list_path", "data/url_lists/approved_urls.yaml")
+    url_list_path = cfg.get("url_list_path", "src/data/url_lists/approved_urls.yaml")
     dataset_name = cfg.get("dataset_name", "demo_dataset")
-    output_dir = Path(cfg.get("output_dir", f"data/datasets/{dataset_name}"))
+    output_dir = Path(cfg.get("output_dir", f"src/data/datasets/{dataset_name}"))
 
     timeout_ms = int(cfg.get("timeout_ms", 45000))
     wait_until = str(cfg.get("wait_until", "domcontentloaded"))
@@ -114,7 +112,7 @@ def main() -> None:
                 )
             )
             record = make_dataset_record(item, cap)
-            item_path = write_item_json(output_dir, record)
+            item_path = write_item_json(output_dir, item.id, record)
             meta["items"].append({"id": item.id, "path": str(item_path)})
 
         except Exception as e:

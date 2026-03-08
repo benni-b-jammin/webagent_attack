@@ -14,6 +14,7 @@ All entrypoints under src/ (capture_dataset, run_demo, eval_trigger, make_trigge
 """
 from __future__ import annotations
 
+import sys
 import json
 import os
 from pathlib import Path
@@ -23,6 +24,10 @@ try:
     import yaml  # type: ignore
 except Exception:
     yaml = None
+
+ROOT = Path(__file__).resolve().parents[2]   # project root
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def load_config(path: str, *, default: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

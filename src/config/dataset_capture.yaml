@@ -1,0 +1,7 @@
+url_list_path: src/data/url_lists/approved_urls.yaml
+dataset_name: demo_dataset
+output_dir: src/data/datasets/demo_dataset
+timeout_ms: 45000
+wait_until: domcontentloaded
+headless: true
+max_html_chars: 200000
