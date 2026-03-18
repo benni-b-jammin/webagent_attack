@@ -49,7 +49,7 @@ def available() -> list[str]:
     return sorted(_REGISTRY.keys())
 
 
-# Import side-effects register algorithms here
+# Import side effects register algorithms here
 def init_registry() -> None:
     """
     Call this once from make_trigger.py before using get().
@@ -57,7 +57,7 @@ def init_registry() -> None:
     """
     # local imports to avoid heavy deps unless needed
     from utils.trigger_blackbox import BlackboxRandomSearch
-    from utils.trigger_gcg import GCGStub
+    from utils.trigger_gcg import GCGTrigger
 
     register(BlackboxRandomSearch())
-    register(GCGStub())
+    register(GCGTrigger())

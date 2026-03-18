@@ -12,7 +12,7 @@ Trigger optimization algorithms (GCG, blackbox, etc.) will be added later.
 
 Configuration
 -------------
-Defaults to configs/trigger_universal.yaml (if present). You can override with --config.
+Defaults to configs/trigger_narrow.yaml (if present). You can override with --config.
 
 Output
 ------
@@ -40,7 +40,7 @@ from utils.trigger_registry import init_registry, get, available  # noqa: E402
 from utils.trigger_artifacts import TriggerArtifact, save_trigger  # noqa: E402
 from utils.eval_runner import load_dataset_items  # noqa: E402
 
-DEFAULT_CONFIG = "configs/trigger_universal.yaml"
+DEFAULT_CONFIG = "configs/trigger_narrow.yaml"
 
 
 def main() -> None:

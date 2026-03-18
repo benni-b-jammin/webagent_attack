@@ -1,0 +1,13 @@
+json: data/demo_sites/TWUI/example_dot_com.json
+target: "```new_tab()```"
+
+trigger_length: 20
+include_target: true
+
+loss_fn: cw
+search_width: 16
+top_k: 64
+
+model: llama3
+dtype: float16
+device: cuda

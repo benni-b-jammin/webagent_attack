@@ -49,7 +49,7 @@ python src/capture_dataset.py --config configs/dataset_capture.yaml
 
 2) Create a (fixed) trigger artifact (placeholder stage)
 ```bash
-python src/make_trigger.py --config configs/trigger_universal.yaml --out data/triggers/demo_trigger.json
+python src/make_trigger.py --config configs/trigger_narrow.yaml --out data/triggers/demo_trigger.json
 ```
 
 3) Run a single demo step
