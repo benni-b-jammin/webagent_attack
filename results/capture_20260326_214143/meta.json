@@ -1,4 +1,0 @@
-{
-  "config": "src/config/dataset_capture.yaml",
-  "output_dir": "src\\data\\datasets\\demo_dataset"
-}
