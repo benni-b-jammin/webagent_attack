@@ -209,3 +209,15 @@ __marimo__/
 #### CUSTOM IGNORE RULES BELOW ####
 # ignore captured datasets
 src/data/datasets/*
+
+# IDE files
+*.iml
+
+# Experiment outputs
+results/
+
+# Python cache
+*.pyc
+
+# Mac / system junk
+.DS_Store
