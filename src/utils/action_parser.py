@@ -1,40 +1,84 @@
 """
-utils/action_parser.py
+src/utils/action_parser.py
 
 Responsibility
 --------------
-Parse model output into a structured action dictionary.
+Extract a BrowserGym high-level action string from model output.
 
-Expected output format
-----------------------
-ACTION: <GOTO|CLICK|TYPE|WAIT> <args>
-
-If no ACTION line is found, returns type=NONE with raw text in args.
-
-Used by
--------
-agent_wrapper.py, eval_runner.py (metrics)
+Supports the original repo's action space.
 """
 from __future__ import annotations
 
 import re
-from typing import Dict
-
-_ACTION_RE = re.compile(r"^\s*ACTION:\s*(GOTO|CLICK|TYPE|WAIT)\s*(.*)\s*$", re.IGNORECASE)
 
 
-def parse_action(text: str) -> Dict[str, str]:
+_FENCED_CODE_RE = re.compile(
+    r"```(?:python)?\s*(.*?)\s*```",
+    re.DOTALL | re.IGNORECASE,
+)
+
+_ACTION_CALL_RE = re.compile(
+    r"""
+    (?P<action>
+        (?:
+            noop|
+            send_msg_to_user|
+            tab_close|
+            tab_focus|
+            new_tab|
+            go_back|
+            go_forward|
+            goto|
+            scroll|
+            fill|
+            select_option|
+            click|
+            dblclick|
+            hover|
+            press|
+            focus|
+            clear|
+            drag_and_drop|
+            upload_file|
+            report_infeasible
+        )
+        \s*\(
+            .*?
+        \)
+    )
+    """,
+    re.DOTALL | re.VERBOSE | re.IGNORECASE,
+)
+
+
+def extract_browsergym_action(text: str) -> str:
     """
-    Parse:
-      ACTION: CLICK text="Sign in"
-    into:
-      {"type": "CLICK", "args": "text=\"Sign in\""}
+    Extract the first BrowserGym-style action call from model output.
+
+    Returns a raw action string such as:
+        click("12")
+        fill("3989", "Ich bin ein Berliner")
+        noop()
+
+    Falls back to noop() if no action is found.
     """
-    m = _ACTION_RE.search(text or "")
-    if not m:
-        return {"type": "NONE", "args": (text or "").strip()}
-    return {"type": m.group(1).upper(), "args": (m.group(2) or "").strip()}
+    if not text:
+        return "noop()"
+
+    text = text.strip()
+
+    fenced = _FENCED_CODE_RE.findall(text)
+    for block in fenced:
+        match = _ACTION_CALL_RE.search(block.strip())
+        if match:
+            return match.group("action").strip()
+
+    match = _ACTION_CALL_RE.search(text)
+    if match:
+        return match.group("action").strip()
+
+    return "noop()"
 
 
 def is_action(text: str) -> bool:
-    return _ACTION_RE.search(text or "") is not None
+    return extract_browsergym_action(text) != "noop()"

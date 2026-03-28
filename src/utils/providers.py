@@ -1,24 +1,30 @@
 """
-utils/providers.py
+src/utils/providers.py
 
 Responsibility
 --------------
-A single file that abstracts LLM access so the project can switch between:
-- OpenAI API (chat.completions)
-- Hugging Face local inference (transformers; loads once and reuses)
-- Hugging Face hosted inference API (optional)
+Provider abstraction for chat-style LLM calls.
 
-This supports your requirement to use either local models or online interfaces.
+Supports:
+- OpenAI API
+- Hugging Face local inference
+- Hugging Face hosted inference API
 
 Used by
 -------
-run_demo.py, eval_trigger.py (and later trigger optimization)
+run_demo.py, agent_wrapper.py
 """
 from __future__ import annotations
 
+from dotenv import load_dotenv
+import pathlib
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Dict
+
+# Load .env from project root
+PROJECT_ROOT = pathlib.Path(os.getcwd())
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 @dataclass
@@ -33,6 +39,15 @@ class BaseProvider:
     def complete(self, prompt: str) -> str:
         raise NotImplementedError
 
+    def complete_messages(self, messages: List[Dict[str, str]]) -> str:
+        """
+        Default fallback: flatten chat messages into one prompt.
+        """
+        prompt = "\n\n".join(
+            f"{m['role'].upper()}:\n{m['content']}" for m in messages
+        )
+        return self.complete(prompt)
+
 
 class OpenAIProvider(BaseProvider):
     def __init__(self, cfg: ProviderConfig):
@@ -40,17 +55,23 @@ class OpenAIProvider(BaseProvider):
         try:
             from openai import OpenAI  # type: ignore
         except Exception as e:
-            raise RuntimeError("OpenAIProvider requires `openai` package (pip install openai)") from e
+            raise RuntimeError(
+                "OpenAIProvider requires `openai` package (pip install openai)"
+            ) from e
 
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY not set in environment")
+
         self.client = OpenAI(api_key=api_key)
 
     def complete(self, prompt: str) -> str:
+        return self.complete_messages([{"role": "user", "content": prompt}])
+
+    def complete_messages(self, messages: List[Dict[str, str]]) -> str:
         resp = self.client.chat.completions.create(
             model=self.cfg.model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_tokens,
         )
@@ -59,7 +80,7 @@ class OpenAIProvider(BaseProvider):
 
 class HFLocalProvider(BaseProvider):
     """
-    Local transformers inference. Loads once and reuses (important for speed).
+    Local transformers inference.
     """
     def __init__(self, cfg: ProviderConfig):
         self.cfg = cfg
@@ -69,8 +90,6 @@ class HFLocalProvider(BaseProvider):
         except Exception as e:
             raise RuntimeError("HFLocalProvider requires transformers+torch") from e
 
-        # HF_TOKEN only needed for gated models (like Llama) if you didn't already cache them.
-        # It's ok if absent for public models.
         token = os.environ.get("HF_TOKEN")
 
         self.torch = torch
@@ -92,15 +111,24 @@ class HFLocalProvider(BaseProvider):
                 max_new_tokens=self.cfg.max_tokens,
                 do_sample=(self.cfg.temperature > 0),
                 temperature=max(self.cfg.temperature, 1e-6),
+                pad_token_id=self.tokenizer.eos_token_id,
             )
+
         text = self.tokenizer.decode(out[0], skip_special_tokens=True)
-        # Return only the tail beyond the prompt if possible
-        return text[len(prompt) :].strip() if text.startswith(prompt) else text.strip()
+        if text.startswith(prompt):
+            return text[len(prompt):].strip()
+        return text.strip()
+
+    def complete_messages(self, messages: List[Dict[str, str]]) -> str:
+        prompt = "\n\n".join(
+            f"{m['role'].upper()}:\n{m['content']}" for m in messages
+        )
+        return self.complete(prompt)
 
 
 class HFHostedProvider(BaseProvider):
     """
-    Optional: Hugging Face Inference API.
+    Hugging Face Inference API.
     """
     def __init__(self, cfg: ProviderConfig):
         self.cfg = cfg
@@ -116,25 +144,39 @@ class HFHostedProvider(BaseProvider):
         headers = {"Authorization": f"Bearer {self.token}"}
         payload = {
             "inputs": prompt,
-            "parameters": {"max_new_tokens": self.cfg.max_tokens, "temperature": self.cfg.temperature},
+            "parameters": {
+                "max_new_tokens": self.cfg.max_tokens,
+                "temperature": self.cfg.temperature,
+            },
         }
+
         r = requests.post(url, headers=headers, json=payload, timeout=60)
         r.raise_for_status()
         data = r.json()
 
-        # HF returns different shapes depending on model/task; handle common case:
         if isinstance(data, list) and data and "generated_text" in data[0]:
             gen = data[0]["generated_text"]
-            return gen[len(prompt) :].strip() if isinstance(gen, str) else str(gen)
+            if isinstance(gen, str) and gen.startswith(prompt):
+                return gen[len(prompt):].strip()
+            return str(gen)
+
         return str(data)
+
+    def complete_messages(self, messages: List[Dict[str, str]]) -> str:
+        prompt = "\n\n".join(
+            f"{m['role'].upper()}:\n{m['content']}" for m in messages
+        )
+        return self.complete(prompt)
 
 
 def make_provider(cfg: ProviderConfig) -> BaseProvider:
     p = cfg.provider.lower().strip()
+
     if p == "openai":
         return OpenAIProvider(cfg)
     if p == "hf_local":
         return HFLocalProvider(cfg)
     if p == "hf_hosted":
         return HFHostedProvider(cfg)
+
     raise ValueError(f"Unknown provider: {cfg.provider}")

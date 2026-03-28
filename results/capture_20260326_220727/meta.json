@@ -1,0 +1,4 @@
+{
+  "config": ".\\src\\config\\demo_run.yaml",
+  "output_dir": "src\\data\\datasets\\demo_dataset"
+}

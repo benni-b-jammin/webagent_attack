@@ -1,0 +1,44 @@
+# =========================
+# Provider (LLM)
+# =========================
+provider:
+  name: openai
+  model: gpt-4o-mini
+  temperature: 0.0
+  max_tokens: 200
+
+
+# =========================
+# Agent settings
+# =========================
+agent:
+  headless: true
+
+
+# =========================
+# Environment (BrowserGym)
+# =========================
+env:
+  start_url: "https://translate.google.com/?sl=de&tl=en&op=translate"
+  goal: "Translate 'Ich bin ein Berliner' into English"
+  n_steps: 3
+  headless: true
+  record_video: true
+  task_seed: null
+
+
+# =========================
+# Trigger (optional attack)
+# =========================
+trigger:
+  path: null
+  # Example:
+  # path: "triggers/my_trigger.json"
+
+
+# =========================
+# Experiment metadata
+# =========================
+experiment:
+  name: "demo_run"
+  results_dir: "./results"

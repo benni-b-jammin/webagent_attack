@@ -46,7 +46,7 @@ from src.utils.url_list import load_url_list, iter_items  # noqa: E402
 from src.utils.dataset_capture import capture_page, make_dataset_record, write_item_json  # noqa: E402
 
 
-DEFAULT_CONFIG = "config/dataset_capture.yaml"
+DEFAULT_CONFIG = "src/config/dataset_capture.yaml"
 
 
 def main() -> None:

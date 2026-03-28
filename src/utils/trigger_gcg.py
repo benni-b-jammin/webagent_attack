@@ -94,6 +94,8 @@ class GCGTrigger:
         if include_target:
             n_target_tokens = len(tokenizer.tokenize(target))
             total_xs = trigger_length - n_target_tokens
+            if trigger_length < n_target_tokens:
+                raise ValueError("trigger_length must be >= number of target tokens")
 
             starting_str = (
                 math.floor(total_xs / 2) * "x "

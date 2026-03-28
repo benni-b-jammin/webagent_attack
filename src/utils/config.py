@@ -33,13 +33,34 @@ if str(ROOT) not in sys.path:
 def load_config(path: str, *, default: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Load YAML or JSON config from disk.
+
+    Resolution order:
+    1. Absolute path as given
+    2. Relative to current working directory
+    3. Relative to project root
+
     Returns {} if file is missing and a default is provided; otherwise raises.
     """
-    p = Path(path)
-    if not p.exists():
+    raw = Path(path)
+
+    candidates = []
+    if raw.is_absolute():
+        candidates.append(raw)
+    else:
+        candidates.append(raw)
+        candidates.append(ROOT / raw)
+
+    p = None
+    for candidate in candidates:
+        if candidate.exists():
+            p = candidate.resolve()
+            break
+
+    if p is None:
         if default is not None:
             return dict(default)
-        raise FileNotFoundError(f"Config not found: {p}")
+        searched = ", ".join(str(c) for c in candidates)
+        raise FileNotFoundError(f"Config not found. Tried: {searched}")
 
     suffix = p.suffix.lower()
     txt = p.read_text(encoding="utf-8")

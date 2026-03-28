@@ -56,8 +56,8 @@ def init_registry() -> None:
     Keeps imports explicit and avoids __init__.py patterns.
     """
     # local imports to avoid heavy deps unless needed
-    from utils.trigger_blackbox import BlackboxRandomSearch
-    from utils.trigger_gcg import GCGTrigger
+    from src.utils.trigger_blackbox import BlackboxRandomSearch
+    from src.utils.trigger_gcg import GCGTrigger
 
     register(BlackboxRandomSearch())
     register(GCGTrigger())

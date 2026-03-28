@@ -26,7 +26,7 @@ from __future__ import annotations
 import random
 from typing import Any, Dict, List
 
-from utils.prompt_builder import build_prompt
+from src.utils.prompt_builder import build_prompt
 
 
 class BlackboxRandomSearch:

@@ -1,0 +1,11 @@
+[22:07:27] INFO Config: .\src\config\demo_run.yaml
+[22:07:27] INFO URL list: src/data/url_lists/approved_urls.yaml
+[22:07:27] INFO Dataset: demo_dataset
+[22:07:27] INFO Output: src\data\datasets\demo_dataset
+[22:07:27] INFO Capturing wiki_llm: https://en.wikipedia.org/wiki/Large_language_model
+[22:07:32] INFO Capturing example_dot_com: https://example.com/
+[22:07:33] INFO Capturing w3c_aria_intro: https://www.w3.org/WAI/standards-guidelines/aria/
+[22:07:35] INFO Capturing news_site_safe: https://www.bbc.com/news
+[22:07:37] INFO Capturing google_translate: https://translate.google.com/?sl=de&tl=en&op=translate
+[22:07:39] INFO Capturing norway_un_mission: https://www.norway.no/en/missions/un/
+[22:07:41] INFO Done. Dataset written to: src\data\datasets\demo_dataset

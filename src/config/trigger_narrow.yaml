@@ -1,4 +1,4 @@
-json: data/demo_sites/TWUI/example_dot_com.json
+json: src/data/datasets/demo_dataset/items/example_dot_com.json
 target: "```new_tab()```"
 
 trigger_length: 20
