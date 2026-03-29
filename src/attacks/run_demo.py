@@ -85,7 +85,6 @@ def load_trigger(trigger_path: Optional[str]) -> Optional[str]:
         raise KeyError(f"No 'trigger' field found in trigger JSON: {path}")
     return trigger
 
-
 class BrowserGymWebAgent:
     """
     Thin adapter that BrowserGym can call.
@@ -104,9 +103,6 @@ class BrowserGymWebAgent:
         self.action_set = self.agent.action_set
         self.obs_preprocessor = self.agent.obs_preprocessor
 
-        # Needed for interactive mode termination.
-        self.stop_after_send = False
-
     def get_action(self, obs):
         action = self.agent.propose_action(obs, trigger=self.trigger)
 
@@ -115,13 +111,9 @@ class BrowserGymWebAgent:
 
         action_str = str(action).strip()
 
-        if action_str == "noop()" or "I'm done" in action_str:
+        # Match original repo behavior exactly.
+        if "I'm done" in action_str or "noop()" in action_str:
             return None, {}
-
-        if action_str.startswith("send_msg_to_user("):
-            # Extract the answer text and surface it in agent_info if you want,
-            # then terminate immediately.
-            return None, {"final_answer_action": action_str}
 
         return action_str, {}
 

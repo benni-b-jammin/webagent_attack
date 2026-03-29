@@ -5,7 +5,6 @@ Responsibility
 --------------
 Capture webpage representations for a dataset using Playwright:
 - page title
-- HTML content (truncated)
 - accessibility tree snapshot (flattened to text)
 
 This is the core of the new dataset pipeline (curated URL ingestion).
@@ -16,8 +15,6 @@ capture_dataset.py
 """
 from __future__ import annotations
 
-import time
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -46,7 +43,7 @@ async def capture_page(
     timeout_ms: int = 45000,
     wait_until: str = "domcontentloaded",
     headless: bool = True,
-    max_html_chars: int = 200000,
+    max_html_chars: int = 200000,  # kept for compatibility with callers, but unused
 ) -> Dict[str, Any]:
     from playwright.async_api import async_playwright  # local import
 
@@ -58,9 +55,6 @@ async def capture_page(
             await page.wait_for_timeout(500)
 
             title = await page.title()
-            html = await page.content()
-            if len(html) > max_html_chars:
-                html = html[:max_html_chars] + "\n<!-- TRUNCATED -->"
 
             a11y = await page.accessibility.snapshot()
             axtree_txt = flatten_a11y_tree(a11y) if a11y else ""
@@ -68,7 +62,6 @@ async def capture_page(
             return {
                 "url": url,
                 "title": title,
-                "pruned_html": html,
                 "axtree_txt": axtree_txt,
             }
         finally:
@@ -97,24 +90,22 @@ def make_dataset_record(
     force_placeholder_in_axtree: bool = True,
 ) -> Dict[str, Any]:
     """
-    Produce an observation dict compatible with the *original repo* style:
+    Produce an observation dict compatible with the original repo style,
+    without pruned_html:
       - goal_object: list[str]
       - open_pages_urls: list[str]
       - open_pages_titles: list[str]
       - axtree_txt: str
-      - pruned_html: str
 
     Placeholder insertion
     ---------------------
     - If item.injection.surface includes axtree_txt, insert placeholder into axtree_txt
-    - If item.injection.surface includes pruned_html, insert placeholder into pruned_html
-    - If force_placeholder_in_axtree=True, also insert into axtree_txt even if injection.surface isn't axtree surface.
-      (This matches your desired example output.)
+    - If force_placeholder_in_axtree=True, also insert into axtree_txt even if
+      injection.surface is not axtree surface.
     """
     url = capture.get("url", item.url)
     title = capture.get("title", "")
     axtree_txt = capture.get("axtree_txt", "") or ""
-    pruned_html = capture.get("pruned_html", "") or ""
 
     strategy = "prepend"
     surface = "axtree_txt"
@@ -122,14 +113,9 @@ def make_dataset_record(
         strategy = item.injection.strategy or "append"
         surface = item.injection.surface or "axtree_txt"
 
-    # Apply placeholder based on injection metadata
-    if item.injection:
-        if surface in ("axtree_txt", "both"):
-            axtree_txt = _apply_placeholder(axtree_txt, placeholder, strategy)
-        if surface in ("pruned_html", "both"):
-            pruned_html = _apply_placeholder(pruned_html, placeholder, strategy)
+    if item.injection and surface in ("axtree_txt", "both"):
+        axtree_txt = _apply_placeholder(axtree_txt, placeholder, strategy)
 
-    # Optional: ensure placeholder is present in axtree regardless (recommended if your attack surface is a11y tree)
     if force_placeholder_in_axtree and placeholder not in axtree_txt:
         axtree_txt = _apply_placeholder(axtree_txt, placeholder, "prepend")
 
@@ -138,13 +124,12 @@ def make_dataset_record(
         "open_pages_urls": [url],
         "open_pages_titles": [title],
         "axtree_txt": axtree_txt,
-        "pruned_html": pruned_html,
     }
 
 
 def write_item_json(out_dir: Path, item_id: str, record: Dict[str, Any]) -> Path:
     """
-    Write a single captured observation JSON in the new (original-repo-style) schema.
+    Write a single captured observation JSON.
 
     Since the schema no longer includes an 'id' field, the caller must provide item_id
     (typically the UrlListItem.id) for naming the file deterministically.

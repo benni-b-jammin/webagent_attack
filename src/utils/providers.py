@@ -79,14 +79,11 @@ class OpenAIProvider(BaseProvider):
 
 
 class HFLocalProvider(BaseProvider):
-    """
-    Local transformers inference.
-    """
     def __init__(self, cfg: ProviderConfig):
         self.cfg = cfg
         try:
-            import torch  # type: ignore
-            from transformers import AutoModelForCausalLM, AutoTokenizer  # type: ignore
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
         except Exception as e:
             raise RuntimeError("HFLocalProvider requires transformers+torch") from e
 
@@ -94,36 +91,44 @@ class HFLocalProvider(BaseProvider):
 
         self.torch = torch
         self.tokenizer = AutoTokenizer.from_pretrained(cfg.model, token=token)
-        self.model = AutoModelForCausalLM.from_pretrained(cfg.model, token=token)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            cfg.model,
+            token=token,
+            torch_dtype=getattr(torch, "float16"),
+        )
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
         self.model.eval()
 
-        if torch.cuda.is_available():
-            self.model.to("cuda")
-
     def complete(self, prompt: str) -> str:
-        inputs = self.tokenizer(prompt, return_tensors="pt")
-        if self.torch.cuda.is_available():
-            inputs = {k: v.to("cuda") for k, v in inputs.items()}
+        return self.complete_messages([{"role": "user", "content": prompt}])
+
+    def complete_messages(self, messages: List[Dict[str, str]]) -> str:
+        inputs = self.tokenizer.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            return_tensors="pt",
+            return_dict=True,
+        ).to(self.device)
 
         with self.torch.no_grad():
-            out = self.model.generate(
-                **inputs,
-                max_new_tokens=self.cfg.max_tokens,
+            output = self.model.generate(
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs.get("attention_mask"),
                 do_sample=(self.cfg.temperature > 0),
-                temperature=max(self.cfg.temperature, 1e-6),
+                max_new_tokens=self.cfg.max_tokens,
+                temperature=max(self.cfg.temperature, 1e-6) if self.cfg.temperature > 0 else None,
                 pad_token_id=self.tokenizer.eos_token_id,
             )
 
-        text = self.tokenizer.decode(out[0], skip_special_tokens=True)
-        if text.startswith(prompt):
-            return text[len(prompt):].strip()
-        return text.strip()
+        prompt_len = inputs["input_ids"].shape[1]
+        generation = self.tokenizer.batch_decode(
+            output[:, prompt_len:],
+            skip_special_tokens=True,
+        )[0]
 
-    def complete_messages(self, messages: List[Dict[str, str]]) -> str:
-        prompt = "\n\n".join(
-            f"{m['role'].upper()}:\n{m['content']}" for m in messages
-        )
-        return self.complete(prompt)
+        return generation.strip()
 
 
 class HFHostedProvider(BaseProvider):

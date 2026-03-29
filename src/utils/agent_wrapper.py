@@ -80,17 +80,33 @@ class WebAgent:
         return processed_obs
 
     def propose_action(
-        self,
-        observation: Dict[str, Any],
-        trigger: Optional[str] = None,
+            self,
+            observation: Dict[str, Any],
+            trigger: Optional[str] = None,
     ) -> str:
+        # Build prompt with a placeholder first, mirroring the original repo style.
         messages = build_messages(
             observation,
-            trigger=trigger,
+            trigger="{optim_str}" if trigger else None,
             include_html=self.cfg.use_html,
             include_axtree=self.cfg.use_axtree,
             chat_mode=self.cfg.chat_mode,
         )
+
+        # Replace placeholder with actual trigger right before inference.
+        if trigger:
+            patched_messages = []
+            for m in messages:
+                content = m["content"]
+                if isinstance(content, str):
+                    content = content.replace("{optim_str}", trigger)
+                patched_messages.append(
+                    {
+                        "role": m["role"],
+                        "content": content,
+                    }
+                )
+            messages = patched_messages
 
         print("\n=== FULL PROMPT SENT TO MODEL ===")
         for m in messages:
