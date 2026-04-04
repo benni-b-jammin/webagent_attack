@@ -625,7 +625,7 @@ class GCG:
         self,
         logits: torch.FloatTensor,
         target_ids: torch.LongTensor,
-        cw_margin: float = 1e-3,
+        cw_margin: float = 1e-6,
         dim: int = -1,
     ) -> torch.FloatTensor:
         """CW loss.

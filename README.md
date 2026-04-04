@@ -49,20 +49,20 @@ python src/capture_dataset.py --config configs/dataset_capture.yaml
 
 2) Create a (fixed) trigger artifact (placeholder stage)
 ```bash
-python src/make_trigger.py --config configs/trigger_narrow.yaml --out data/triggers/demo_trigger.json
+python src/make_trigger.py --config configs/narrow_triggers/trigger_default.yaml --out data/triggers/demo_trigger.json
 ```
 
 3) Run a single demo step
 
 ```bash
-python src/run_demo.py --config configs/demo_run.yaml \
+python src/run_demo.py --config configs/demo_default.yaml \
   --dataset_item data/datasets/demo_dataset/items/wiki_llm.json \
   --trigger data/triggers/demo_trigger.json
 ```
 
 4) Evaluate over a dataset (prompt-only)
 ```bash
-python src/eval_trigger.py --config configs/demo_run.yaml \
+python src/eval_trigger.py --config configs/demo_runs/demo_default.yaml \
   --dataset data/datasets/demo_dataset \
   --trigger data/triggers/demo_trigger.json \
   --target_contains "ACTION:"

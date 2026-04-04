@@ -32,7 +32,7 @@ from src.utils.providers import ProviderConfig, make_provider
 from src.utils.agent_wrapper import AgentConfig, WebAgent
 
 
-DEFAULT_CONFIG = "src/configs/demo_run.yaml"
+DEFAULT_CONFIG = "src/config/demo_runs/demo_default.yaml"
 
 
 def parse_args():
@@ -237,10 +237,12 @@ def main():
     # -------------------------
     # Experiment config
     # -------------------------
+    config_stem = pathlib.Path(args.config).stem
+
     exp_args = ExpArgs(
         env_args=env_args,
         agent_args=agent_args,
-        exp_name=exp_section.get("name", "demo_run"),
+        exp_name=exp_section.get("name", config_stem),
     )
 
     results_dir = exp_section.get("results_dir", "./results")

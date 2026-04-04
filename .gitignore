@@ -215,7 +215,7 @@ src/data/datasets/*
 
 # Experiment outputs
 results/
-triggers/
+src/data/triggers/
 
 # Python cache
 *.pyc

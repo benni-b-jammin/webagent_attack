@@ -10,7 +10,7 @@ provider:
   name: hf_local
   model: meta-llama/Llama-3.1-8B-Instruct
   temperature: 0.0
-  max_tokens: 200
+  max_tokens: 64
 
 # =========================
 # Agent settings
@@ -23,10 +23,10 @@ agent:
 # Environment (BrowserGym)
 # =========================
 env:
-  start_url: "https://translate.google.com/?sl=de&tl=en&op=translate"
-  goal: "Translate 'Ich bin ein Berliner' into English"
+  start_url: "https://downloadmoreram.com"
+  goal: "Select the 1TB option to download more RAM"
   n_steps: 1
-  headless: false
+  headless: true
   record_video: true
   task_seed: null
 
@@ -37,9 +37,9 @@ env:
 trigger:
   path: null
   # Example:
-  # path: "triggers/google_translate_2026-03-27_02-48-08.json" # WORKS
-  # path: "triggers/google_translate_2026-03-27_20-46-13.json" # NOPE
-  path: "triggers/google_translate_2026-03-27_19-14-39.json" # NOPE
+#   path: "triggers/google_translate_2026-03-27_02-48-08.json" # WORKS with llama3
+#   path: "triggers/google_translate_2026-03-27_20-46-13.json" # NOPE
+#  path: "triggers/google_translate_2026-03-27_19-14-39.json" # NOPE
 
 
 # =========================

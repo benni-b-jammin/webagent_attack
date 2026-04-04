@@ -89,6 +89,21 @@ class GCGTrigger:
         ]
 
         # -----------------------------
+        # DEBUG BYPASS
+        # -----------------------------
+        debug_trigger = cfg.get("debug_return_trigger")
+        if debug_trigger is not None:
+            return {
+                "trigger": debug_trigger,
+                "trace": {
+                    "best_loss": None,
+                    "num_steps": 0,
+                    "time_to_find": 0.0,
+                    "debug_bypass": True,
+                },
+            }
+
+        # -----------------------------
         # build starting trigger
         # -----------------------------
         if include_target:

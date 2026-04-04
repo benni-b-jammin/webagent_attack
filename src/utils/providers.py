@@ -32,7 +32,7 @@ class ProviderConfig:
     provider: str  # "openai" | "hf_local" | "hf_hosted"
     model: str
     temperature: float = 0.0
-    max_tokens: int = 200
+    max_tokens: int = 64
 
 
 class BaseProvider:
@@ -83,22 +83,39 @@ class HFLocalProvider(BaseProvider):
         self.cfg = cfg
         try:
             import torch
-            from transformers import AutoModelForCausalLM, AutoTokenizer
+            from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
         except Exception as e:
-            raise RuntimeError("HFLocalProvider requires transformers+torch") from e
+            raise RuntimeError("HFLocalProvider requires transformers+torch+bitsandbytes") from e
 
         token = os.environ.get("HF_TOKEN")
-
         self.torch = torch
-        self.tokenizer = AutoTokenizer.from_pretrained(cfg.model, token=token)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            cfg.model,
-            token=token,
-            torch_dtype=getattr(torch, "float16"),
-        )
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model.to(self.device)
+        self.tokenizer = AutoTokenizer.from_pretrained(cfg.model, token=token)
+
+        if torch.cuda.is_available():
+            bnb_config = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.float16,
+            )
+
+            self.model = AutoModelForCausalLM.from_pretrained(
+                cfg.model,
+                token=token,
+                quantization_config=bnb_config,
+                device_map="auto",
+            )
+
+            # Important: do NOT call self.model.to("cuda") here
+            self.device = None
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                cfg.model,
+                token=token,
+                dtype=torch.float32,
+            )
+            self.device = torch.device("cpu")
+            self.model.to(self.device)
+
         self.model.eval()
 
     def complete(self, prompt: str) -> str:
@@ -110,7 +127,11 @@ class HFLocalProvider(BaseProvider):
             add_generation_prompt=True,
             return_tensors="pt",
             return_dict=True,
-        ).to(self.device)
+        )
+
+        # Put inputs on the same device as the input embedding layer.
+        input_device = self.model.get_input_embeddings().weight.device
+        inputs = {k: v.to(input_device) for k, v in inputs.items()}
 
         with self.torch.no_grad():
             output = self.model.generate(
@@ -129,7 +150,6 @@ class HFLocalProvider(BaseProvider):
         )[0]
 
         return generation.strip()
-
 
 class HFHostedProvider(BaseProvider):
     """

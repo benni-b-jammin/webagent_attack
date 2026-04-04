@@ -18,7 +18,7 @@ Writes a JSON report to results/eval_<timestamp>.json containing:
 
 Configuration
 -------------
-Defaults to configs/demo_run.yaml for provider/model settings. Override with --config.
+Defaults to configs/demo_default.yaml for provider/model settings. Override with --config.
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ from utils.eval_runner import eval_trigger_prompt_only  # noqa: E402
 from utils.logging_utils import make_run_dir, setup_logger, write_json  # noqa: E402
 
 
-DEFAULT_CONFIG = "configs/demo_run.yaml"
+DEFAULT_CONFIG = "configs/demo_runs/demo_default.yaml"
 
 
 def main() -> None:

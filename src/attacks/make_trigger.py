@@ -12,7 +12,7 @@ Trigger optimization algorithms (GCG, blackbox, etc.) will be added later.
 
 Configuration
 -------------
-Defaults to configs/trigger_narrow.yaml (if present). You can override with --config.
+Defaults to src/config/trigger_default.yaml (if present). You can override with --config.
 
 Output
 ------
@@ -28,19 +28,22 @@ import sys
 import time
 from pathlib import Path
 
+import json
+from datetime import datetime
+
 ROOT = Path(__file__).resolve().parents[1]
 SRC = Path(__file__).resolve().parent
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from utils.config import load_config  # noqa: E402
-from utils.logging_utils import make_run_dir, setup_logger  # noqa: E402
+from src.utils.config import load_config  # noqa: E402
+from src.utils.logging_utils import make_run_dir, setup_logger  # noqa: E402
 
-from utils.trigger_registry import init_registry, get, available  # noqa: E402
-from utils.trigger_artifacts import TriggerArtifact, save_trigger  # noqa: E402
-from utils.eval_runner import load_dataset_items  # noqa: E402
+from src.utils.trigger_registry import init_registry, get, available  # noqa: E402
+from src.utils.trigger_artifacts import TriggerArtifact, save_trigger  # noqa: E402
+from src.utils.eval_runner import load_dataset_items  # noqa: E402
 
-DEFAULT_CONFIG = "configs/trigger_narrow.yaml"
+DEFAULT_CONFIG = "src/config/narrow_triggers/trigger_default.yaml"
 
 
 def main() -> None:
@@ -49,7 +52,7 @@ def main() -> None:
     ap.add_argument("--algo", default="fixed", help="Trigger algorithm name (from registry).")
     ap.add_argument("--dataset", default="data/datasets/demo_dataset", help="Dataset dir (optional for some algos).")
     ap.add_argument("--limit_items", type=int, default=None, help="Limit dataset items loaded.")
-    ap.add_argument("--out", default="data/triggers/demo_trigger.json", help="Output trigger JSON path.")
+    ap.add_argument("--out", default="src/data/triggers/demo_trigger.json", help="Output trigger JSON path.")
     args = ap.parse_args()
 
     cfg = load_config(args.config, default={})
@@ -74,18 +77,26 @@ def main() -> None:
     result = algo.run(cfg=cfg, items=items, provider=None)
     trigger = result["trigger"]
 
-    artifact = TriggerArtifact(
-        created_at_unix=int(time.time()),
-        algo=args.algo,
-        trigger=trigger,
-        provider={"provider": "none", "model": "none"},
-        dataset=args.dataset,
-        trace=result.get("trace"),
-        config_path=args.config,
-    )
+    input_json_path = Path(cfg["json"])
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    logger.info(f"Writing trigger artifact to {args.out}")
-    save_trigger(args.out, artifact)
+    output_base_dir = Path("src/data/triggers")
+    out_path = output_base_dir / f"{input_json_path.stem}_{timestamp}.json"
+
+
+    output = {
+        "json_path": str(input_json_path),
+        "model": cfg.get("model"),
+        "target": cfg.get("target"),
+        "trigger": trigger,
+        "time_to_find": None if result.get("trace") is None else result["trace"].get("time_to_find"),
+        "num_steps": None if result.get("trace") is None else result["trace"].get("num_steps"),
+        "args": cfg,
+    }
+
+    logger.info(f"Writing trigger artifact to {out_path}")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(output, indent=4), encoding="utf-8")
     logger.info("Done.")
 
 
