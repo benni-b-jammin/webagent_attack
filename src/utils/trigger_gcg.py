@@ -78,7 +78,7 @@ class GCGTrigger:
         # -----------------------------
         # load json prompt
         # -----------------------------
-        with open(json_path) as f:
+        with open(json_path, "r", encoding="utf-8", errors="replace") as f:
             obs_dict = json.load(f)
 
         sys_content, user_content = promptify_json(obs_dict)

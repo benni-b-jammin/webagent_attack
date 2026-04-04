@@ -12,4 +12,4 @@ model: llama3
 dtype: float16
 device: cuda
 
-debug_return_trigger: "DEBUG_TRIGGER_TEST"
+debug_return_trigger: null # "DEBUG_TRIGGER_TEST"
