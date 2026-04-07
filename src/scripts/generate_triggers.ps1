@@ -24,6 +24,7 @@ foreach ($file in $files) {
         1..3 | ForEach-Object {
             python3 -m src.attacks.make_trigger --algo gcg --config "$($file.FullName)"
         }
+#        python3 -m src.attacks.make_trigger --algo gcg --config "$($file.FullName)"
     }
     else {
         Write-Host "Skipping default config: $($file.FullName)"

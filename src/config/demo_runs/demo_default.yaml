@@ -23,8 +23,8 @@ agent:
 # Environment (BrowserGym)
 # =========================
 env:
-  start_url: "https://translate.google.com/?sl=de&tl=en&op=translate"
-  goal: "Translate 'Ich bin ein Berliner' into English"
+  start_url: "https://www.google.com"
+  goal: "Go to Gmail by clicking the link"
   n_steps: 1
   headless: false
   record_video: true
@@ -37,9 +37,7 @@ env:
 trigger:
   path: null
   # Example:
-#   path: "triggers/google_translate_2026-03-27_02-48-08.json" # WORKS with llama3
-#   path: "triggers/google_translate_2026-03-27_20-46-13.json" # NOPE
-#  path: "triggers/google_translate_2026-03-27_19-14-39.json" # NOPE
+  # path: data/triggers/google_search_2026-04-05_04-48-41.json
 
 
 # =========================

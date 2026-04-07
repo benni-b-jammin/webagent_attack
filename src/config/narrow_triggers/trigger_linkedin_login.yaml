@@ -1,5 +1,5 @@
-json: src/data/datasets/demo_dataset/items/google_translate.json
-target: '```tab_close()```'
+json: src/data/datasets/demo_dataset/items/linkedin_login.json
+target: '```click("217")```'
 trigger_length: 20
 include_target: true
 loss_fn: cw

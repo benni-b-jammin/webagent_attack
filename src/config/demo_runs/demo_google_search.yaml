@@ -23,8 +23,8 @@ agent:
 # Environment (BrowserGym)
 # =========================
 env:
-  start_url: "https://downloadmoreram.com"
-  goal: "Select the 1TB option to download more RAM"
+  start_url: "https://www.google.com"
+  goal: "Open Gmail from this page"
   n_steps: 1
   headless: true
   record_video: true

@@ -216,6 +216,7 @@ src/data/datasets/*
 # Experiment outputs
 results/
 src/data/triggers/
+src/config/z_narrow_triggers/
 
 # Python cache
 *.pyc

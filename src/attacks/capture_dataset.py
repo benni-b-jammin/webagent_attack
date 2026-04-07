@@ -48,6 +48,32 @@ from src.utils.dataset_capture import capture_page, make_dataset_record, write_i
 
 DEFAULT_CONFIG = "src/data/url_lists/approved_urls.yaml"
 
+def write_trigger_config(trigger_dir: Path, item_id: str, item_path: Path) -> Path:
+    import yaml
+
+    trigger_dir.mkdir(parents=True, exist_ok=True)
+
+    trigger_cfg = {
+        "json": str(item_path).replace("\\", "/"),
+        "target": "```tab_close()```",
+        "trigger_length": 20,
+        "include_target": True,
+        "loss_fn": "cw",
+        "search_width": 16,
+        "top_k": 64,
+        "num_steps": 300,
+        "batch_size": 4,
+        "early_stop": True,
+        "model": "llama3",
+        "dtype": "float16",
+        "device": "cuda",
+        "debug_return_trigger": None,
+    }
+
+    out_path = trigger_dir / f"trigger_{item_id}.yaml"
+    out_path.write_text(yaml.safe_dump(trigger_cfg, sort_keys=False), encoding="utf-8")
+    return out_path
+
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Capture dataset from curated URL list.")
@@ -56,6 +82,11 @@ def main() -> None:
         default=DEFAULT_CONFIG,
         help=f"Config path (.yaml/.json). Default: {DEFAULT_CONFIG}",
     )
+    ap.add_argument(
+        "--write_trigger_configs",
+        action="store_true",
+        help="If set, also write trigger YAML configs to src/config/narrow_triggers/",
+    )
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -63,6 +94,8 @@ def main() -> None:
     url_list_path = cfg.get("url_list_path", "src/data/url_lists/approved_urls.yaml")
     dataset_name = cfg.get("dataset_name", "demo_dataset")
     output_dir = Path(cfg.get("output_dir", f"src/data/datasets/{dataset_name}"))
+
+    trigger_config_dir = Path(cfg.get("trigger_config_dir", "src/config/narrow_triggers"))
 
     timeout_ms = int(cfg.get("timeout_ms", 45000))
     wait_until = str(cfg.get("wait_until", "domcontentloaded"))
@@ -114,6 +147,10 @@ def main() -> None:
             record = make_dataset_record(item, cap)
             item_path = write_item_json(output_dir, item.id, record)
             meta["items"].append({"id": item.id, "path": str(item_path)})
+
+            if args.write_trigger_configs:
+                trigger_cfg_path = write_trigger_config(trigger_config_dir, item.id, item_path)
+                logger.info(f"Wrote trigger config: {trigger_cfg_path}")
 
         except Exception as e:
             logger.exception(f"Capture failed for {item.id}: {e}")

@@ -44,6 +44,20 @@ def parse_args():
         default=DEFAULT_CONFIG,
         help=f"Path to config YAML/JSON (default: {DEFAULT_CONFIG})",
     )
+
+    parser.add_argument("--provider_name", help="Override provider.name from config")
+    parser.add_argument("--provider_model", help="Override provider.model from config")
+    parser.add_argument("--provider_temperature", type=float, help="Override provider.temperature from config")
+    parser.add_argument("--provider_max_tokens", type=int, help="Override provider.max_tokens from config")
+
+    parser.add_argument("--headless", help="Override env.headless (true/false)")
+    parser.add_argument("--trigger_path", help="Override trigger.path from config")
+
+    parser.add_argument("--start_url", help="Override env.start_url from config")
+    parser.add_argument("--goal", help="Override env.goal from config")
+    parser.add_argument("--n_steps", type=int, help="Override env.n_steps from config")
+    parser.add_argument("--exp_name", help="Override experiment.name from config")
+
     return parser.parse_args()
 
 
@@ -145,6 +159,46 @@ class BrowserGymWebAgentArgs:
 def main():
     args = parse_args()
     cfg = load_config(args.config)
+
+    # Ensure sections exist
+    cfg.setdefault("provider", {})
+    cfg.setdefault("agent", {})
+    cfg.setdefault("env", {})
+    cfg.setdefault("experiment", {})
+    cfg.setdefault("trigger", {})
+
+    # -------------------------
+    # CLI overrides
+    # -------------------------
+    if args.provider_name is not None:
+        cfg["provider"]["name"] = args.provider_name
+
+    if args.provider_model is not None:
+        cfg["provider"]["model"] = args.provider_model
+
+    if args.provider_temperature is not None:
+        cfg["provider"]["temperature"] = args.provider_temperature
+
+    if args.provider_max_tokens is not None:
+        cfg["provider"]["max_tokens"] = args.provider_max_tokens
+
+    if args.headless is not None:
+        cfg["env"]["headless"] = as_bool(args.headless)
+
+    if args.trigger_path is not None:
+        cfg["trigger"]["path"] = args.trigger_path
+
+    if args.start_url is not None:
+        cfg["env"]["start_url"] = args.start_url
+
+    if args.goal is not None:
+        cfg["env"]["goal"] = args.goal
+
+    if args.n_steps is not None:
+        cfg["env"]["n_steps"] = args.n_steps
+
+    if args.exp_name is not None:
+        cfg["experiment"]["name"] = args.exp_name
 
     # -------------------------
     # Config sections

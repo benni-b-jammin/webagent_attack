@@ -1,0 +1,27 @@
+# ==================================
+# WORK WITH BOTH WEBNAV AND TRIGGER
+# ==================================
+https://translate.google.com/?sl=de&tl=en&op=translate
+https://whentowork.com/logins.htm
+https://www.google.com
+https://www.ecosia.org/
+https://www.linkedin.com/login
+
+# ==================================
+# NOT ENOUGH MEMORY - WEBNAV
+# ==================================
+https://games.penjee.com/binary-numbers-game/
+https://www.citybrewtours.com/
+https://www.chess.com/play
+https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1
+https://www.macewan.ca/home/
+https://en.wikipedia.org/wiki/Large_language_model
+https://www.w3schools.com/java/
+https://en.wikipedia.org/wiki/Wu_County
+
+# ==================================
+# NOT ENOUGH MEMORY - TRIGGER
+# ==================================
+https://quicklatex.com/
+https://www.norway.no/en/missions/un/
+https://downloadmoreram.com

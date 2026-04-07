@@ -135,17 +135,35 @@ class GCGTrigger:
                 use_cw = False
 
         # -----------------------------
+        # DEBUG - print GCG config inputs
+        # -----------------------------
+        print("\n=== GCG CONFIG INPUTS ===")
+        print(f"json_path       = {json_path}")
+        print(f"target          = {target}")
+        print(f"trigger_length  = {trigger_length}")
+        print(f"include_target  = {include_target}")
+        print(f"loss_fn         = {loss_fn}")
+        print(f"search_width    = {search_width}")
+        print(f"top_k           = {top_k}")
+        print(f"model           = {model_name_short}")
+        print(f"dtype           = {dtype}")
+        print(f"device          = {device}")
+        print(f"debug_trigger   = {cfg.get('debug_return_trigger')}")
+        print(f"num_steps       = {cfg.get('num_steps', 300)}")
+        print(f"batch_size      = {cfg.get('batch_size', 4)}")
+        print(f"max_prompt_chars= {cfg.get('max_prompt_chars', None)}")
+        # -----------------------------
         # GCG config
         # -----------------------------
         config = GCGConfig(
-            num_steps=300,
+            num_steps=int(cfg.get('num_steps', 300)),
             optim_str_init=starting_str,
             search_width=search_width,
-            batch_size=4,
+            batch_size=int(cfg.get("batch_size", 4)),
             topk=top_k,
             use_mellowmax=use_mm,
             use_cw_loss=use_cw,
-            early_stop=True,
+            early_stop=bool(cfg.get("early_stop", False)),
             verbosity="INFO",
             add_space_before_target=True if model_name_short == "llama2" else False,
         )

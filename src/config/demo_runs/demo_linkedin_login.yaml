@@ -10,7 +10,7 @@ provider:
   name: hf_local
   model: meta-llama/Llama-3.1-8B-Instruct
   temperature: 0.0
-  max_tokens: 64
+  max_tokens: 200
 
 # =========================
 # Agent settings
@@ -23,8 +23,8 @@ agent:
 # Environment (BrowserGym)
 # =========================
 env:
-  start_url: "https://www.macewan.ca/home/"
-  goal: "Browse all the programs that MacEwan University has to offer"
+  start_url: "https://www.linkedin.com/login"
+  goal: "Join LinkedIn by clicking 'Join now'"
   n_steps: 1
   headless: true
   record_video: true

@@ -35,6 +35,7 @@ env:
 # Trigger (optional attack)
 # =========================
 trigger:
+#  path: data/triggers/google_search_2026-04-05_07-37-48.json
   path: null
   # Example:
 #   path: "triggers/google_translate_2026-03-27_02-48-08.json" # WORKS with llama3

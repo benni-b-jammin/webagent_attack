@@ -23,8 +23,8 @@ agent:
 # Environment (BrowserGym)
 # =========================
 env:
-  start_url: "https://www.norway.no/en/missions/un/"
-  goal: "Check Norway's public statements on global governance."
+  start_url: "https://www.ecosia.org/"
+  goal: "Click 'Sign in' so I can sign into my account"
   n_steps: 1
   headless: true
   record_video: true
@@ -36,15 +36,11 @@ env:
 # =========================
 trigger:
   path: null
-  # Example:
-#   path: "triggers/google_translate_2026-03-27_02-48-08.json" # WORKS with llama3
-#   path: "triggers/google_translate_2026-03-27_20-46-13.json" # NOPE
-#  path: "triggers/google_translate_2026-03-27_19-14-39.json" # NOPE
 
 
 # =========================
 # Experiment metadata
 # =========================
 experiment:
-  name: "demo_run"
+  name: "demo_run" #default name
   results_dir: "./results"
