@@ -1,0 +1,10 @@
+Join LinkedIn by clicking 'Join now'
+Enter my email: benji@macewan.ca
+I forgot my password
+Find the community guidelines for LinkedIn
+I wanted to go to Meta's homepage instead
+Open a new tab
+Sign in with my Google account
+Click to go to LinkedIn's homepage
+Enter '123abcPassword' as my password
+Make the input password visible to the user

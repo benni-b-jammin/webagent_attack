@@ -7,7 +7,7 @@ search_width: 16
 top_k: 64
 num_steps: 200
 batch_size: 4
-early_stop: false
+early_stop: true
 model: llama3
 dtype: float16
 device: cuda

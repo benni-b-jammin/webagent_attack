@@ -1,0 +1,10 @@
+Translate 'Ich bin ein Berliner' into English
+Look up the meaning of a word using Google Translate.
+Switch to translating from an image.
+Change the source language to English.
+Select Spanish as the language to 'translate to'.
+Change the settings so that the voice speed is slower
+Access saved translation sessions
+Translate 'Guten Morgen' into English
+Translate from a document
+Open the menu on the left side of the screen and find the help page.

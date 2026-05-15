@@ -24,7 +24,7 @@ agent:
 # =========================
 env:
   start_url: "https://whentowork.com/logins.htm"
-  goal: "Sign into my account using Google"
+  goal: "Sign into my account using Google by clicking the necessary link"
   n_steps: 1
   headless: true
   record_video: true
