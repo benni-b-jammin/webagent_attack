@@ -8,31 +8,70 @@ Last updated: 14/05/2026
 import multiprocessing
 import argparse
 
-from src.utils.website_data import get_web_data
-from src.utils.data_processing import submit_goal_object_batch
+import argparse
 
-def main():
-    ap = argparse.ArgumentParser(description="Capture Data (Automated)")
-    ap.add_argument(
-        '--n_batch_splits',
-        type=int,
-        default=1,
-        help="Number of batch splits to use for OpenAI batch API, which has a limit of file sizes. Recommend 1 per 5000 websites"
-    )
-    ap.add_argument(
-        '--batch_ids',
-        type=str,
-        nargs='+',
-        help="Batch ids of the goal object to retrieve. Wait 24 hours after submitting to OpenAI."
-    )
-    args=ap.parse_args()
+from src.utils.website_data import (
+    DEFAULT_TARGET_WEBSITES,
+    DEFAULT_URLS_PER_QUERY,
+    get_website_data,
+)
 
-    # Get website data
-    # Run on 4 processes
-    with multiprocessing.Pool(4) as pool:
-        pool.map(get_web_data, range(4))
-    # Set goals
-    ids = submit_goal_object_batch(args.n_batch_splits)
-    print("Saving batch ids for retrieval later...")
-    # Write ids to a file and pause program for 24 hours before getting goals
-    # Get goals
+from src.utils.data_processing import DEFAULT_N_SEARCH_QUERIES
+
+parser = argparse.ArgumentParser(
+    description="Prepare website observation JSON files for the web-agent pipeline"
+)
+
+parser.add_argument(
+    "instruction",
+    choices=["get_webs"],
+    help="Current supported step: retrieve candidate websites and capture their observation JSONs.",
+)
+
+parser.add_argument(
+    "--query_types_file",
+    type=str,
+    required=True,
+    help="Path to a text file containing website/page types, one per line.",
+)
+
+parser.add_argument(
+    "--n_websites",
+    type=int,
+    default=DEFAULT_TARGET_WEBSITES,
+    help="Number of website JSON files to save.",
+)
+
+parser.add_argument(
+    "--n_search_queries",
+    type=int,
+    default=DEFAULT_N_SEARCH_QUERIES,
+    help="Number of OpenAI-generated search queries to create from the input file.",
+)
+
+parser.add_argument(
+    "--urls_per_query",
+    type=int,
+    default=DEFAULT_URLS_PER_QUERY,
+    help="Number of URLs to request from SerpApi per query.",
+)
+
+parser.add_argument(
+    "--out_dir",
+    type=str,
+    default="src/data/datasets/auto_data",
+    help="Directory in which to save captured website JSON files.",
+)
+
+args = parser.parse_args()
+
+if args.instruction == "get_webs":
+    get_website_data(
+        query_types_file=args.query_types_file,
+        n_websites=args.n_websites,
+        n_search_queries=args.n_search_queries,
+        urls_per_query=args.urls_per_query,
+        out_dir=args.out_dir,
+    )
+else:
+    raise ValueError("Invalid instruction")

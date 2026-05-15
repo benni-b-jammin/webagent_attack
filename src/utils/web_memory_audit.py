@@ -133,14 +133,25 @@ def get_cuda_stats_mb() -> tuple[Optional[float], Optional[float]]:
 # Dataset/trigger discovery
 # ---------------------------------------------------------------------
 
-def discover_site_records(dataset_items_dir: Path, trigger_config_dir: Path) -> List[SiteRecord]:
+def discover_site_records(
+    dataset_items_dir: Path,
+    trigger_config_dir: Path,
+    default_trigger_name: str = "trigger_default.yaml",
+) -> List[SiteRecord]:
     records: List[SiteRecord] = []
+
+    default_trigger_cfg = trigger_config_dir / default_trigger_name
+    if not default_trigger_cfg.exists():
+        default_trigger_cfg = None
 
     for dataset_json in sorted(dataset_items_dir.glob("*.json")):
         stem = dataset_json.stem
-        trigger_cfg = trigger_config_dir / f"trigger_{stem}.yaml"
-        if not trigger_cfg.exists():
-            trigger_cfg = None
+
+        specific_trigger_cfg = trigger_config_dir / f"trigger_{stem}.yaml"
+        if specific_trigger_cfg.exists():
+            trigger_cfg = specific_trigger_cfg
+        else:
+            trigger_cfg = default_trigger_cfg
 
         records.append(
             SiteRecord(
@@ -159,13 +170,14 @@ def load_dataset_item(path: Path) -> Dict[str, Any]:
 
 def extract_capture_fields(item: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Tries to be robust to different dataset schemas.
+    Tries to be robust to different dataset schemas, including captured BrowserGym JSONs.
     """
     url = (
         item.get("url")
         or item.get("page_url")
         or item.get("start_url")
         or item.get("meta", {}).get("url")
+        or (item.get("open_pages_urls", [""])[0] if item.get("open_pages_urls") else "")
         or ""
     )
 
@@ -173,6 +185,7 @@ def extract_capture_fields(item: Dict[str, Any]) -> Dict[str, Any]:
         item.get("title")
         or item.get("page_title")
         or item.get("meta", {}).get("title")
+        or (item.get("open_pages_titles", [""])[0] if item.get("open_pages_titles") else "")
         or ""
     )
 
@@ -336,6 +349,8 @@ def measure_webnav_memory(
 
 def measure_trigger_memory(
     trigger_cfg_path: Optional[Path],
+    dataset_json_path: Optional[Path],
+    max_steps: int = 5,
 ) -> tuple[Optional[float], Optional[float], Optional[float], Optional[bool], Optional[str]]:
     if trigger_cfg_path is None:
         return None, None, None, None, None
@@ -345,7 +360,11 @@ def measure_trigger_memory(
 
     try:
         cfg = yaml.safe_load(trigger_cfg_path.read_text(encoding="utf-8"))
-        cfg["num_steps"] = min(int(cfg.get("num_steps", 200)), 5)
+        cfg["num_steps"] = min(int(cfg.get("num_steps", 200)), max_steps)
+
+        if dataset_json_path is not None:
+            cfg["json"] = str(dataset_json_path)
+
     except Exception as e:
         return None, None, None, False, f"Could not read trigger config: {e!r}"
 
@@ -446,6 +465,22 @@ def main():
         action="store_true",
         help="Also attempt trigger-generation measurement when a matching trigger config exists",
     )
+    ap.add_argument(
+        "--trigger_audit_steps",
+        type=int,
+        default=5,
+        help="Maximum number of trigger-generation steps to run during memory auditing",
+    )
+    ap.add_argument(
+        "--delete_failed_webnav",
+        action="store_true",
+        help="Delete dataset JSON files that fail the webnav memory audit",
+    )
+    ap.add_argument(
+        "--delete_failed_trigger",
+        action="store_true",
+        help="Delete dataset JSON files that fail the trigger-generation memory audit",
+    )
     args = ap.parse_args()
 
     dataset_items_dir = Path(args.dataset_items_dir)
@@ -478,7 +513,11 @@ def main():
 
             trig_alloc = trig_res = trig_elapsed = trig_ok = trig_err = None
             if args.measure_trigger:
-                trig_alloc, trig_res, trig_elapsed, trig_ok, trig_err = measure_trigger_memory(rec.trigger_config)
+                trig_alloc, trig_res, trig_elapsed, trig_ok, trig_err = measure_trigger_memory(
+                    rec.trigger_config,
+                    dataset_json_path=rec.dataset_json,
+                    max_steps=args.trigger_audit_steps,
+                )
 
             rows.append(
                 SiteMetrics(
@@ -562,7 +601,6 @@ def main():
     df = pd.DataFrame(asdict(r) for r in rows)
     df.to_csv(outdir / "website_feature_runtime_table.csv", index=False)
 
-    # Analysis 1
     make_scatter(
         df=df,
         xcol="prompt_tokens",
@@ -571,7 +609,6 @@ def main():
         title="Prompt tokens vs peak webnav VRAM",
     )
 
-    # Analysis 2
     make_scatter(
         df=df,
         xcol="axtree_chars",
@@ -580,7 +617,6 @@ def main():
         title="AXTree chars vs peak webnav VRAM",
     )
 
-    # Analysis 3
     summary_cols = [
         "website", "url", "dataset_json", "trigger_config",
         "axtree_chars", "axtree_tokens", "prompt_tokens",
@@ -590,7 +626,6 @@ def main():
     ]
     df[summary_cols].to_csv(outdir / "website_summary_table.csv", index=False)
 
-    # Analysis 4
     make_pass_fail_summary(
         df=df,
         success_col="webnav_ok",
@@ -605,6 +640,30 @@ def main():
                 success_col="trigger_ok",
                 outpath=outdir / "pass_fail_group_comparison_trigger.csv",
             )
+
+    # Optional deletion of failed sites
+    to_delete = set()
+
+    if args.delete_failed_webnav:
+        failed_webnav = df[df["webnav_ok"] == False]["dataset_json"].dropna().tolist()
+        to_delete.update(failed_webnav)
+
+    if args.delete_failed_trigger and args.measure_trigger:
+        failed_trigger = df[df["trigger_ok"] == False]["dataset_json"].dropna().tolist()
+        to_delete.update(failed_trigger)
+
+    deleted = []
+    for path_str in sorted(to_delete):
+        path = Path(path_str)
+        if path.exists():
+            path.unlink()
+            deleted.append(str(path))
+
+    if deleted:
+        with open(outdir / "deleted_sites.txt", "w", encoding="utf-8") as f:
+            for p in deleted:
+                f.write(p + "\n")
+        print(f"Deleted {len(deleted)} dataset JSON files.")
 
     print(f"\nSaved outputs to: {outdir}")
 
