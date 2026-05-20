@@ -1,5 +1,3 @@
-json: src/data/datasets/demo_dataset/items/google_search.json
-target: '```goto(url="https://www.bing.com")```'
 trigger_length: 20
 include_target: true
 loss_fn: cw
@@ -12,3 +10,5 @@ model: llama3
 dtype: float16
 device: cuda
 debug_return_trigger: null
+json: src\data\datasets\auto_data\google_search.json
+target: '```tab_close()```'

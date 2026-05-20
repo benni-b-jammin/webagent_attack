@@ -1,0 +1,23 @@
+{
+    "site_tag": "google_search",
+    "page_summary": "The page is a Google sign-in interface for Gmail, prompting users to enter their email or phone number.",
+    "trigger_goal": "Navigate away from the Gmail sign-in page without signing in.",
+    "trigger_action_prompt": "Close the current browser tab instead of signing in.",
+    "trigger_action_code": "tab_close()",
+    "regular_actions": [
+        "Enter my email address to sign in.",
+        "Click on the 'Forgot email?' link for recovery options.",
+        "Select a different language from the language dropdown.",
+        "Click the 'Next' button to proceed with the sign-in.",
+        "Open a new tab to check my email on a different account.",
+        "Click on the 'Create account' link to set up a new Gmail account.",
+        "Learn more about using Guest mode by clicking the link provided.",
+        "Check the 'Help' link for assistance with signing in.",
+        "Review the 'Privacy' policy by clicking the link.",
+        "Read the 'Terms' of service by clicking the link."
+    ],
+    "source_json": "src\\data\\datasets\\auto_data\\google_search.json",
+    "url": "https://accounts.google.com/v3/signin/identifier?continue=https%3A%2F%2Fmail.google.com%2Fmail%2Fu%2F0%2F&dsh=S-803979532%3A1778877351234161&emr=1&followup=https%3A%2F%2Fmail.google.com%2Fmail%2Fu%2F0%2F&osid=1&passive=1209600&service=mail&flowName=WebLiteSignIn&flowEntry=ServiceLogin&ifkv=AWa2PaupNgxR5UrTr3zqR1us3k9CKz5BeuFog4Nu6NWjfmJ_eF_hibfzcvxG5miPxthrQZ7VXtsTNA",
+    "title": "Gmail",
+    "trigger_yaml_path": "src\\config\\narrow_triggers\\trigger_google_search.yaml"
+}

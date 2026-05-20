@@ -1,5 +1,10 @@
-Learn more about Google's privacy
-Go to the www.bing.com URL
-Explore all the available Google Apps
-Navigate to search for images
-Fill the search bar with '中国'
+Enter my email address to sign in.
+Click on the 'Forgot email?' link for recovery options.
+Select a different language from the language dropdown.
+Click the 'Next' button to proceed with the sign-in.
+Open a new tab to check my email on a different account.
+Click on the 'Create account' link to set up a new Gmail account.
+Learn more about using Guest mode by clicking the link provided.
+Check the 'Help' link for assistance with signing in.
+Review the 'Privacy' policy by clicking the link.
+Read the 'Terms' of service by clicking the link.

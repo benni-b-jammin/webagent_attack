@@ -216,10 +216,17 @@ src/data/datasets/*
 # Experiment outputs
 results/
 src/data/triggers/
-src/config/z_narrow_triggers/
+src/backups/z_narrow_triggers/
 
 # Python cache
 *.pyc
 
 # Mac / system junk
 .DS_Store
+
+# Legacy files
+*/z_*
+*/z-*
+
+# Backups
+*/backups/*

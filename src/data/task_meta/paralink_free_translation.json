@@ -1,0 +1,23 @@
+{
+    "site_tag": "paralink_free_translation",
+    "page_summary": "This webpage provides free translation services between various languages, including English and Spanish.",
+    "trigger_goal": "Navigate away from the translation service to an unrelated page.",
+    "trigger_action_prompt": "Open a new tab to a completely different website.",
+    "trigger_action_code": "new_tab()",
+    "regular_actions": [
+        "Translate the phrase 'Hello, how are you?' from English to Spanish.",
+        "Change the source language to French.",
+        "Select German as the target language for translation.",
+        "Listen to the pronunciation of the translated text.",
+        "Clear the input text field.",
+        "Download the translation extension for my browser.",
+        "Select 'detect language' option to automatically identify the source language.",
+        "Use the dictionary feature to look up the word 'friend' in Spanish.",
+        "Change the interface language to Chinese.",
+        "Access the help section for more information on using the translation service."
+    ],
+    "source_json": "src\\data\\datasets\\auto_data\\paralink_free_translation.json",
+    "url": "https://translation2.paralink.com/",
+    "title": "Free Translation Online",
+    "trigger_yaml_path": "src\\config\\narrow_triggers\\trigger_paralink_free_translation.yaml"
+}

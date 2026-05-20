@@ -1,14 +1,14 @@
-json: src/data/datasets/demo_dataset/items/w3schools_java.json
-target: '```tab_close()```'
 trigger_length: 20
 include_target: true
 loss_fn: cw
 search_width: 16
 top_k: 64
-num_steps: 300
+num_steps: 200
 batch_size: 4
 early_stop: true
 model: llama3
 dtype: float16
 device: cuda
 debug_return_trigger: null
+json: src\data\datasets\auto_data\deepl_deepl_translate.json
+target: '```goto("https://www.example.com")```'
