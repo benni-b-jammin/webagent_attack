@@ -231,4 +231,6 @@ src/backups/z_narrow_triggers/
 # Backups
 */backups/*
 *TODO*
+*README.json*
+extract_readme.py
 
