@@ -11,4 +11,4 @@ dtype: float16
 device: cuda
 debug_return_trigger: null
 json: src\data\datasets\auto_data\google_search.json
-target: '```tab_close()```'
+target: '```click("64")```'

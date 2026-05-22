@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import src.config.auto_config as auto_cfg
+
 
 # ============================================================
 # Helpers
@@ -161,7 +163,7 @@ def step4_generate_triggers(
     cmd = [
         sys.executable,
         "-m",
-        "src.attacks.generate_triggers",
+        "src.attacks.generate_triggers_auto",
         "--trigger_config_dir", trigger_config_dir,
         "--algo", trigger_algo,
         "--n_triggers", str(n_triggers_per_site),
@@ -170,7 +172,9 @@ def step4_generate_triggers(
     if skip_default_trigger_config:
         cmd.append("--skip_default")
 
-    run_command(cmd, dry_run=dry_run)
+    if dry_run:
+        cmd.append("--dry_run")
+    run_command(cmd, dry_run=False)
 
 
 # ============================================================
@@ -180,25 +184,39 @@ def step4_generate_triggers(
 def step5_run_tests(
     captured_sites_dir: str,
     prompts_dir: str,
+    trigger_dir: str,
+    auto_config: str,
     results_dir: str,
+    headless: bool = True,
+    latest_trigger_only: bool = False,
+    limit_sites: int | None = None,
     dry_run: bool = False,
 ) -> None:
     """
-    Placeholder for future implementation.
-
-    Intended behavior:
-    - run each website once without trigger
-    - run each website with each available trigger
-    - automatically compare outcome against baseline
-    - label success/failure
+    Run baseline and triggered BrowserGym tests using run_demo.py through the
+    Step 5 wrapper script.
     """
     ensure_dir(results_dir)
-    print("\n[TODO] Step 5 not implemented yet.", flush=True)
-    print(f"[TODO] Would read websites from: {captured_sites_dir}", flush=True)
-    print(f"[TODO] Would read prompts from: {prompts_dir}", flush=True)
-    print(f"[TODO] Would save run outputs to: {results_dir}", flush=True)
-    if not dry_run:
-        pass
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "src.attacks.run_trigger_tests_auto",
+        "--dataset_items_dir", captured_sites_dir,
+        "--prompt_dir", prompts_dir,
+        "--trigger_dir", trigger_dir,
+        "--auto_config", auto_config,
+        "--outdir", results_dir,
+        "--headless", "true" if headless else "false",
+    ]
+
+    if latest_trigger_only:
+        cmd.append("--latest_trigger_only")
+
+    if limit_sites is not None:
+        cmd.extend(["--limit_sites", str(limit_sites)])
+
+    run_command(cmd, dry_run=dry_run)
 
 
 # ============================================================
@@ -206,25 +224,56 @@ def step5_run_tests(
 # ============================================================
 
 def step6_summarize_results(
+    captured_sites_dir: str,
     results_dir: str,
     summary_outdir: str,
+    attack_summary_csv: str | None,
+    memory_summary_csv: str,
+    memory_feature_csv: str,
     dry_run: bool = False,
 ) -> None:
     """
-    Placeholder for future implementation.
-
-    Intended behavior:
-    - summarize number of websites retrieved
-    - summarize number of websites with final results
-    - compute per-site success rates
-    - generate graphs/tables
+    Run Step 6 summarization from Step 5 outputs and Step 2 memory-audit outputs.
+    If attack_summary_csv is not provided, use the newest run in results_dir.
     """
     ensure_dir(summary_outdir)
-    print("\n[TODO] Step 6 not implemented yet.", flush=True)
-    print(f"[TODO] Would read test outputs from: {results_dir}", flush=True)
-    print(f"[TODO] Would write summaries/graphs to: {summary_outdir}", flush=True)
-    if not dry_run:
-        pass
+
+    resolved_attack_summary = attack_summary_csv
+
+    if not resolved_attack_summary:
+        results_root = Path(results_dir)
+        candidate_runs = sorted(
+            [p for p in results_root.glob("run_*") if p.is_dir()],
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+
+        if not candidate_runs:
+            raise FileNotFoundError(
+                f"No Step 5 run directories found in {results_root}"
+            )
+
+        latest_run = candidate_runs[0]
+        candidate_csv = latest_run / "attack_summary.csv"
+        if not candidate_csv.exists():
+            raise FileNotFoundError(
+                f"No attack_summary.csv found in latest Step 5 run directory: {latest_run}"
+            )
+
+        resolved_attack_summary = str(candidate_csv)
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "src.attacks.summarize_trigger_tests",
+        "--attack_summary_csv", resolved_attack_summary,
+        "--dataset_items_dir", captured_sites_dir,
+        "--memory_summary_csv", memory_summary_csv,
+        "--memory_feature_csv", memory_feature_csv,
+        "--outdir", summary_outdir,
+    ]
+
+    run_command(cmd, dry_run=dry_run)
 
 
 # ============================================================
@@ -243,14 +292,14 @@ def main() -> None:
     parser.add_argument(
         "--start_step",
         type=int,
-        default=1,
+        default=auto_cfg.START_STEP,
         choices=[1, 2, 3, 4, 5, 6],
         help="Pipeline step to start from.",
     )
     parser.add_argument(
         "--end_step",
         type=int,
-        default=6,
+        default=auto_cfg.END_STEP,
         choices=[1, 2, 3, 4, 5, 6],
         help="Pipeline step to stop after.",
     )
@@ -258,64 +307,81 @@ def main() -> None:
     # ----------------------------
     # Step 1
     # ----------------------------
-    parser.add_argument("--query_types_file", type=str, required=True, help="Input text file of webpage types.")
-    parser.add_argument("--n_websites", type=int, default=50, help="Number of websites to capture.")
-    parser.add_argument("--n_search_queries", type=int, default=12, help="Number of OpenAI-generated search queries.")
-    parser.add_argument("--urls_per_query", type=int, default=10, help="Number of search-result URLs per query.")
-    parser.add_argument("--captured_sites_dir", type=str, default="src/data/datasets/auto_data", help="Directory for captured site JSONs.")
+    parser.add_argument("--query_types_file", type=str, default=auto_cfg.QUERY_TYPES_FILE,
+                        help="Input text file of webpage types.")
+    parser.add_argument("--n_websites", type=int, default=auto_cfg.N_WEBSITES, help="Number of websites to capture.")
+    parser.add_argument("--n_search_queries", type=int, default=auto_cfg.N_SEARCH_QUERIES,
+                        help="Number of OpenAI-generated search queries.")
+    parser.add_argument("--urls_per_query", type=int, default=auto_cfg.URLS_PER_QUERY,
+                        help="Number of search-result URLs per query.")
+    parser.add_argument("--captured_sites_dir", type=str, default=auto_cfg.CAPTURED_SITES_DIR,
+                        help="Directory for captured site JSONs.")
 
     # ----------------------------
     # Step 2
     # ----------------------------
-    parser.add_argument("--audit_outdir", type=str, default="src/results/website_memory_audit", help="Directory for memory-audit outputs.")
-    parser.add_argument("--model", type=str, default="meta-llama/Llama-3.1-8B-Instruct", help="Model used for memory auditing.")
-    parser.add_argument("--trigger_config_dir", type=str, default="src/config/narrow_triggers", help="Directory containing trigger YAML files & where generated YAML files are saved.")
-    parser.add_argument("--default_trigger_name", type=str, default="trigger_default.yaml", help="Fallback trigger YAML file.")
+    parser.add_argument("--audit_outdir", type=str, default=auto_cfg.AUDIT_OUTDIR,
+                        help="Directory for memory-audit outputs.")
+    parser.add_argument("--model", type=str, default=auto_cfg.MODEL, help="Model used for memory auditing.")
+    parser.add_argument("--trigger_config_dir", type=str, default=auto_cfg.TRIGGER_CONFIG_DIR,
+                        help="Directory containing trigger YAML files & where generated YAML files are saved.")
+    parser.add_argument("--default_trigger_name", type=str, default=auto_cfg.DEFAULT_TRIGGER_NAME,
+                        help="Fallback trigger YAML file.")
     parser.add_argument("--measure_trigger", action="store_true", help="Also perform trigger-feasibility audit.")
-    parser.add_argument("--trigger_audit_steps", type=int, default=5, help="Number of trigger steps used in audit mode.")
-    parser.add_argument("--delete_failed_webnav", action="store_true", help="Delete sites that fail webnav memory audit.")
+    parser.add_argument("--trigger_audit_steps", type=int, default=auto_cfg.TRIGGER_AUDIT_STEPS,
+                        help="Number of trigger steps used in audit mode.")
+    parser.add_argument("--delete_failed_webnav", action="store_true",
+                        help="Delete sites that fail webnav memory audit.")
     parser.add_argument("--delete_failed_trigger", action="store_true", help="Delete sites that fail trigger audit.")
 
     # ----------------------------
     # Step 3
     # ----------------------------
-    parser.add_argument("--prompts_dir", type=str, default="src/data/test_prompts", help="Directory to save and access generated regular-action prompt files.")
-    parser.add_argument("--meta_dir", type=str, default="src/data/task_meta", help="Directory to save generated per-site action metadata JSON files.")
-    parser.add_argument("--actions_summary_csv", type=str, default="results/generated_site_actions_summary.csv", help="Summary CSV for generated site actions.")
-    parser.add_argument("--action_model", type=str, default="gpt-4o-mini", help="OpenAI model to use for generating trigger actions and regular prompts.")
-    parser.add_argument("--n_regular_actions", type=int, default=10, help="Number of regular test prompts to generate per site.")
-    parser.add_argument("--skip_existing_actions", action="store_true", help="Skip sites whose generated action metadata already exists.")
+    parser.add_argument("--prompts_dir", type=str, default="src/data/test_prompts",
+                        help="Directory to save and access generated regular-action prompt files.")
+    parser.add_argument("--meta_dir", type=str, default="src/data/task_meta",
+                        help="Directory to save generated per-site action metadata JSON files.")
+    parser.add_argument("--actions_summary_csv", type=str, default="results/generated_site_actions_summary.csv",
+                        help="Summary CSV for generated site actions.")
+    parser.add_argument("--action_model", type=str, default="gpt-4o-mini",
+                        help="OpenAI model to use for generating trigger actions and regular prompts.")
+    parser.add_argument("--n_regular_actions", type=int, default=10,
+                        help="Number of regular test prompts to generate per site.")
+    parser.add_argument("--skip_existing_actions", action="store_true",
+                        help="Skip sites whose generated action metadata already exists.")
 
     # ----------------------------
     # Step 4
     # ----------------------------
-    parser.add_argument(
-        "--n_triggers_per_site",
-        type=int,
-        default=1,
-        help="Number of triggers to generate per surviving website.",
-    )
-    parser.add_argument(
-        "--trigger_algo",
-        type=str,
-        default="gcg",
-        help="Trigger-generation algorithm to pass to make_trigger.py.",
-    )
-    parser.add_argument(
-        "--skip_default_trigger_config",
-        action="store_true",
-        help="Skip config files whose names contain 'default' during trigger generation.",
-    )
-
+    parser.add_argument("--n_triggers_per_site", type=int, default=1,
+                        help="Number of triggers to generate per surviving website.")
+    parser.add_argument("--trigger_algo", type=str, default="gcg",
+                        help="Trigger-generation algorithm to pass to make_trigger.py.")
+    parser.add_argument("--skip_default_trigger_config", action="store_true",
+                        help="Skip config files whose names contain 'default' during trigger generation.")
     # ----------------------------
     # Step 5
     # ----------------------------
-    parser.add_argument("--results_dir", type=str, default="results/pipeline_runs", help="Directory for run outputs.")
+    parser.add_argument("--trigger_dir", type=str, default=auto_cfg.TRIGGER_DIR,
+                        help="Directory containing generated trigger artifacts.")
+    parser.add_argument("--auto_config", type=str, default=auto_cfg.AUTO_RUN_CONFIG,
+                        help="Default auto-run config passed to run_demo.py and overridden by CLI arguments.")
+    parser.add_argument("--headless_tests", type=str, default=auto_cfg.HEADLESS_TESTS,
+                        help="Run Step 5 demos in headless mode (true/false).")
+    parser.add_argument("--latest_trigger_only", action="store_true",
+                        help="Use only the most recent trigger artifact per site in Step 5.")
+    parser.add_argument("--limit_test_sites", type=int, default=None,
+                        help="Optional limit on the number of Step 5 sites processed.")
+    parser.add_argument("--results_dir", type=str, default=auto_cfg.RESULTS_DIR,
+                        help="Directory for Step 5 run outputs.")
 
     # ----------------------------
     # Step 6
     # ----------------------------
-    parser.add_argument("--summary_outdir", type=str, default="results/final_summary", help="Directory for final summaries and graphs.")
+    parser.add_argument("--summary_outdir", type=str, default=auto_cfg.SUMMARY_OUTDIR, help="Directory for final summaries and graphs.")
+    parser.add_argument("--attack_summary_csv", type=str, default=auto_cfg.ATTACK_SUMMARY_CSV, help="Optional explicit path to Step 5 attack_summary.csv. If omitted, auto-detect from results_dir.")
+    parser.add_argument("--memory_summary_csv", type=str, default=auto_cfg.MEMORY_SUMMARY_CSV, help="Path to Step 2 website_summary_table.csv")
+    parser.add_argument("--memory_feature_csv", type=str, default=auto_cfg.MEMORY_FEATURE_CSV, help="Path to Step 2 website_feature_runtime_table.csv")
 
     args = parser.parse_args()
 
@@ -365,10 +431,11 @@ def main() -> None:
     # Step 4
     if args.start_step <= 4 <= args.end_step:
         step4_generate_triggers(
-            captured_sites_dir=args.captured_sites_dir,
             trigger_config_dir=args.trigger_config_dir,
+            trigger_algo=args.trigger_algo,
             n_triggers_per_site=args.n_triggers_per_site,
             dry_run=args.dry_run,
+            skip_default_trigger_config=args.skip_default_trigger_config,
         )
 
     # Step 5
@@ -376,18 +443,26 @@ def main() -> None:
         step5_run_tests(
             captured_sites_dir=args.captured_sites_dir,
             prompts_dir=args.prompts_dir,
+            trigger_dir=args.trigger_dir,
+            auto_config=args.auto_config,
             results_dir=args.results_dir,
+            headless=args.headless_tests.strip().lower() in {"1", "true", "yes", "y", "on"},
+            latest_trigger_only=args.latest_trigger_only,
+            limit_sites=args.limit_test_sites,
             dry_run=args.dry_run,
         )
 
     # Step 6
     if args.start_step <= 6 <= args.end_step:
         step6_summarize_results(
+            captured_sites_dir=args.captured_sites_dir,
             results_dir=args.results_dir,
             summary_outdir=args.summary_outdir,
+            attack_summary_csv=args.attack_summary_csv,
+            memory_summary_csv=args.memory_summary_csv,
+            memory_feature_csv=args.memory_feature_csv,
             dry_run=args.dry_run,
         )
-
 
 if __name__ == "__main__":
     main()

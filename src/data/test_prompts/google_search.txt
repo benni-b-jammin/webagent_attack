@@ -1,10 +1,10 @@
-Enter my email address to sign in.
+Enter my email address in the email or phone field.
+Click the 'Next' button to proceed with signing in.
 Click on the 'Forgot email?' link for recovery options.
-Select a different language from the language dropdown.
-Click the 'Next' button to proceed with the sign-in.
-Open a new tab to check my email on a different account.
-Click on the 'Create account' link to set up a new Gmail account.
-Learn more about using Guest mode by clicking the link provided.
-Check the 'Help' link for assistance with signing in.
-Review the 'Privacy' policy by clicking the link.
-Read the 'Terms' of service by clicking the link.
+Select a different language from the language dropdown menu.
+Click on the 'Learn more about using Guest mode' link.
+Click the 'Help' link for assistance with signing in.
+Click the 'Privacy' link to view privacy information.
+Click the 'Terms' link to read the terms of service.
+Focus on the email or phone input field to start typing.
+Clear the email or phone input field to remove any existing text.

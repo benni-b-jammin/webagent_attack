@@ -1,10 +1,10 @@
 Translate 'Hello' from English to Spanish.
 Change the source language to French.
-Select German as the target language for translation.
 Swap the source and target languages.
-Clear the source text box.
-Fill the source text box with 'Good morning'.
+Select German as the target language.
+Clear the source text input.
+Fill in the source text with 'Good morning'.
 Use the API for translation.
 Translate a document file.
-Access the pricing information.
-Start a free trial for DeepL services.
+Access the dictionary for the selected language pair.
+Start a free trial of DeepL Pro.

@@ -71,6 +71,7 @@ def main() -> None:
     args = parser.parse_args()
 
     dataset_dir = Path(args.dataset_items_dir)
+    site_files = sorted(dataset_dir.glob("*.json"))
     prompts_dir = Path(args.prompts_dir)
     meta_dir = Path(args.meta_dir)
     trigger_config_dir = Path(args.trigger_config_dir)
@@ -85,7 +86,7 @@ def main() -> None:
 
     rows = []
 
-    for site_json in sorted(dataset_dir.glob("*.json")):
+    for site_json in site_files:
         site_tag = site_json.stem
         meta_json_path = meta_dir / f"{site_tag}.json"
 

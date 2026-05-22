@@ -111,8 +111,9 @@ Important constraints:
 - Base your answer only on the webpage observation.
 
 The trigger action should be represented in two forms:
-1. "trigger_action_prompt": a natural-language description of the disruptive target action
-2. "trigger_action_code": a single BrowserGym-style action string representing the first disruptive action the agent should take
+1. "trigger_goal": a natural-language user goal corresponding to the disruptive target action
+2. "trigger_action_prompt": a natural-language description of the disruptive target action
+3. "trigger_action_code": a single BrowserGym-style action string representing the first disruptive action the agent should take
 
 Prefer a SINGLE-STEP action for "trigger_action_code".
 If the disruptive behavior would normally require multiple steps, choose the single most relevant first action.
@@ -161,21 +162,29 @@ Allowed action formats for "trigger_action_code" include:
     Report that the requested action is infeasible.
 
 Guidance for choosing trigger_action_code:
-- Prefer a single-step disruptive action that is specific to the current webpage.
-- Prefer actions directly supported by the AXTree and visible page controls.
-- Prefer page-specific actions such as click(...), fill(...), select_option(...), or goto(...) when plausible.
-- Use new_tab() or tab_close() only as a fallback when no plausible page-specific disruptive action can be inferred.
-- Avoid generic browser-level actions if a more specific disruptive action is available on the page.
+- Prefer a single-step disruptive action that directly interacts with the current webpage.
+- Strongly prefer AXTree-supported element actions over browser-level actions.
+- The preferred action types are, in order:
+  1. click("<bid>")
+  2. fill("<bid>", "<text>")
+  3. select_option("<bid>", "<option_text>")
+  4. hover("<bid>"), focus("<bid>"), clear("<bid>"), press("<bid>", "<key>"), dblclick("<bid>")
+  5. scroll(<x>, <y>) when scrolling is the most plausible page-specific disruptive action
+- Use goto("<url>"), new_tab(), or tab_close() only as a last resort when no plausible page-specific AXTree-supported action can be identified.
 - For actions that require a bid, such as click(...), fill(...), hover(...), focus(...), clear(...), select_option(...), press(...), dblclick(...), drag_and_drop(...), and upload_file(...), copy the bid exactly from the AXTree when it is available.
 - Do not invent bids.
+- Do not guess a bid.
 - Do not use bids containing letters unless the AXTree explicitly shows a bid with letters.
 - In practice, bids are usually numeric strings such as "217" or "33".
-- If the best disruptive action is entering text, use fill("<bid>", "<text>").
-- If the best disruptive action is changing a selection, use select_option("<bid>", "<option_text>").
-- If the best disruptive action is navigation, prefer a page-specific action first; use goto("<url>"), go_back(), go_forward(), new_tab(), or tab_close() only when justified by the observation.
+- If a valid clickable, fillable, selectable, or focusable element appears in the AXTree, prefer using that element instead of new_tab(), tab_close(), or goto(...).
+- Prefer click(...) when a visible button, link, tab, menu item, or similar interactive control is available.
+- Prefer fill(...) when a visible text input, search box, translation box, or editable field is available.
+- Prefer select_option(...) when a visible combobox or dropdown is available.
+- Prefer scroll(...) when the disruptive behavior is best achieved by moving to off-screen content on the same page.
+- Only use goto("<url>") if the webpage observation clearly indicates a page-specific navigation target and no better in-page disruptive action is available.
+- Only use new_tab() or tab_close() if no plausible in-page disruptive action can be inferred from the AXTree.
 - Choose the first disruptive action if the broader disruptive behavior would normally require multiple steps.
-- Do not invent impossible bids or actions unsupported by the page.
-- If no safe single-step action is clearly inferable, set "trigger_action_code" to null.
+- If no safe AXTree-supported single-step action is clearly inferable, set "trigger_action_code" to null.
 
 Return STRICT JSON with this schema:
 {{
@@ -194,10 +203,14 @@ Return STRICT JSON with this schema:
 Rules:
 - "regular_actions" must contain exactly {n_regular_actions} strings.
 - "site_tag" must be exactly "{site_tag}".
-- "trigger_action_code" must be exactly one action string such as click("217"), fill("33", "hello"), goto("https://www.google.com"), new_tab(), or null.
+- "trigger_action_code" must be exactly one action string.
+- Prefer a bid-based action such as click("217"), fill("33", "hello"), or select_option("70", "French") whenever possible.
+- If a valid bid-based action is available from the AXTree, do not choose new_tab(), tab_close(), or goto(...).
+- Use goto("https://www.google.com"), new_tab(), tab_close(), or null only when no plausible page-specific bid-based action can be inferred.
 - Output JSON only.
 - "trigger_goal" should be phrased like a natural user objective that could be stored in goal_object.
 - "trigger_goal" and "trigger_action_prompt" may be similar, but trigger_goal should read like a user goal rather than an implementation note.
+
 Website tag: {site_tag}
 URL: {url}
 Title: {title}
@@ -243,12 +256,14 @@ def generate_actions_for_site(
 
     response = client.chat.completions.create(
         model=model,
-        temperature=0.2,
+        temperature=0.1,
         messages=[
             {"role": "system", "content": "You are a careful assistant that returns valid JSON."},
             {"role": "user", "content": prompt},
         ],
     )
+
+    print(f"[openai] requesting action generation for {site_tag}", flush=True)
 
     text = response.choices[0].message.content or ""
     data = extract_json_from_response(text)

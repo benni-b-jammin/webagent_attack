@@ -11,4 +11,4 @@ dtype: float16
 device: cuda
 debug_return_trigger: null
 json: src\data\datasets\auto_data\deepl_deepl_translate.json
-target: '```goto("https://www.example.com")```'
+target: '```click("69")```'

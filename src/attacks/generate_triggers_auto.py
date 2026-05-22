@@ -18,6 +18,10 @@ def run_command(cmd: list[str], log_file, dry_run: bool = False) -> int:
     log_file.flush()
 
     if dry_run:
+        msg = "[DRY RUN] Skipping trigger generation command execution."
+        print(msg, flush=True)
+        log_file.write(msg + "\n")
+        log_file.flush()
         return 0
 
     result = subprocess.run(cmd, cwd=ROOT)
@@ -69,7 +73,7 @@ def main() -> None:
     parser.add_argument(
         "--dry_run",
         action="store_true",
-        help="Print commands without executing them.",
+        help="Discover configs and log planned trigger calls, but skip actual trigger generation.",
     )
 
     args = parser.parse_args()
@@ -85,6 +89,11 @@ def main() -> None:
         header = f"Trigger generation started at {timestamp}\n"
         print(header.strip(), flush=True)
         log_file.write(header)
+
+        if args.dry_run:
+            dry_msg = "[DRY RUN MODE] Config discovery and planned commands will be shown; trigger generation will not be executed."
+            print(dry_msg, flush=True)
+            log_file.write(dry_msg + "\n")
 
         if not trigger_config_dir.exists():
             raise FileNotFoundError(f"Trigger config directory does not exist: {trigger_config_dir}")

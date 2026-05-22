@@ -4,7 +4,7 @@ import random
 import re
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 from urllib.parse import urlparse
 
 import playwright.sync_api
@@ -221,7 +221,12 @@ def dedupe_preserve_order(items: List[str]) -> List[str]:
 # Main capture routine
 # ============================================================
 
-def save_observation(obs: Dict, source_query: str, out_dir: Path) -> str:
+def save_observation(
+    obs: Dict,
+    source_type: str,
+    source_query: str,
+    out_dir: Path,
+) -> str:
     """
     Saves a captured observation JSON and returns the saved filename stem.
     """
@@ -236,6 +241,7 @@ def save_observation(obs: Dict, source_query: str, out_dir: Path) -> str:
 
     obs["site_tag"] = site_tag
     obs["capture_id"] = capture_id
+    obs["source_type"] = source_type
     obs["source_query"] = source_query
 
     with open(out_dir / f"{capture_id}.json", "w", encoding="utf-8") as f:
@@ -257,50 +263,72 @@ def get_website_data(
     - generate OpenAI search queries from input types
     - retrieve candidate URLs via SerpApi
     - capture BrowserGym observation JSONs
-    - save them with stable root names
+    - save them with stable root names and source_type metadata
     """
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
-    queries = generate_search_queries(
+    # Now returns:
+    # [{"source_type": "...", "query": "..."}, ...]
+    query_records = generate_search_queries(
         query_types_file=query_types_file,
         n_queries=n_search_queries,
     )
 
-    # Save the generated search queries for debugging/reproducibility
+    # Save generated search queries with their source type
     with open(out_path / "generated_search_queries.txt", "w", encoding="utf-8") as f:
-        for q in queries:
-            f.write(q + "\n")
+        for rec in query_records:
+            f.write(f"[{rec['source_type']}] {rec['query']}\n")
 
-    candidate_urls: List[str] = []
-    for q in queries:
+    candidate_records: List[Dict[str, str]] = []
+    seen_urls = set()
+
+    for rec in query_records:
+        source_type = rec["source_type"]
+        query = rec["query"]
+
         try:
-            urls = fetch_sites_from_serpapi(q, num_results=urls_per_query)
-            candidate_urls.extend(urls)
+            urls = fetch_sites_from_serpapi(query, num_results=urls_per_query)
+            for url in urls:
+                if url not in seen_urls:
+                    seen_urls.add(url)
+                    candidate_records.append({
+                        "url": url,
+                        "source_type": source_type,
+                        "source_query": query,
+                    })
         except Exception as e:
-            print(f"[search-failed] query={q!r} error={e}", flush=True)
+            print(f"[search-failed] query={query!r} error={e}", flush=True)
 
-    candidate_urls = dedupe_preserve_order(candidate_urls)
-    random.shuffle(candidate_urls)
+    random.shuffle(candidate_records)
 
     with open(out_path / "candidate_urls.txt", "w", encoding="utf-8") as f:
-        for url in candidate_urls:
-            f.write(url + "\n")
+        for rec in candidate_records:
+            f.write(f"[{rec['source_type']}] {rec['source_query']} -> {rec['url']}\n")
 
     dl = DownloaderEnv(DEFAULT_START_URL)
     saved = 0
     attempts = 0
 
-    for url in candidate_urls:
+    for rec in candidate_records:
         if saved >= n_websites or attempts >= max_capture_attempts:
             break
 
+        url = rec["url"]
+        source_type = rec["source_type"]
+        source_query = rec["source_query"]
+
         attempts += 1
-        print(f"[capture] {saved+1}/{n_websites} -> {url}", flush=True)
+        print(f"[capture] {saved+1}/{n_websites} -> {url} | type={source_type}", flush=True)
 
         try:
             obs = dl.obs_from_url(url)
-            capture_id = save_observation(obs, source_query="serpapi_search", out_dir=out_path)
+            capture_id = save_observation(
+                obs,
+                source_type=source_type,
+                source_query=source_query,
+                out_dir=out_path,
+            )
             print(f"[saved] {capture_id}.json", flush=True)
             saved += 1
 

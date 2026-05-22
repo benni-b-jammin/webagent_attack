@@ -1,10 +1,10 @@
-Translate the phrase 'Hello, how are you?' from English to Spanish.
+Translate 'Hello' from English to Spanish.
 Change the source language to French.
-Select German as the target language for translation.
+Select 'German' as the target language.
+Clear the text input field.
 Listen to the pronunciation of the translated text.
-Clear the input text field.
-Download the translation extension for my browser.
-Select 'detect language' option to automatically identify the source language.
-Use the dictionary feature to look up the word 'friend' in Spanish.
-Change the interface language to Chinese.
-Access the help section for more information on using the translation service.
+Download the translation extension.
+Access the help section for more information.
+Select 'Arabic' as the source language.
+Use the special symbols to add accents to the text.
+Check the option to detect the language automatically.
